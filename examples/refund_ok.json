@@ -1,0 +1,85 @@
+{
+  "grants": [
+    {
+      "id": "g1",
+      "parent": null,
+      "issued_by": "auth-service",
+      "principal": "cust_42",
+      "holder": "support-agent",
+      "actions": {
+        "orders.lookup": {
+          "order_id": {
+            "in": [
+              "A100"
+            ]
+          }
+        },
+        "refunds.create": {
+          "order_id": {
+            "in": [
+              "A100"
+            ]
+          },
+          "amount": {
+            "max": 200
+          },
+          "reason": {
+            "any": true
+          }
+        }
+      },
+      "expires_at": "2026-09-26T18:00:00Z",
+      "delegations_left": 2
+    },
+    {
+      "id": "g2",
+      "parent": "g1",
+      "issued_by": "support-agent",
+      "principal": "cust_42",
+      "holder": "billing-agent",
+      "actions": {
+        "refunds.create": {
+          "order_id": {
+            "eq": "A100"
+          },
+          "amount": {
+            "max": 80
+          },
+          "reason": {
+            "any": true
+          }
+        }
+      },
+      "expires_at": "2026-09-26T17:00:00Z",
+      "delegations_left": 0
+    }
+  ],
+  "policy": {
+    "trusted_issuers": [
+      "auth-service"
+    ],
+    "tools": {
+      "orders.lookup": {},
+      "refunds.create": {
+        "approval_over": {
+          "amount": 100
+        },
+        "max": {
+          "amount": 500
+        }
+      }
+    }
+  },
+  "call": {
+    "agent": "billing-agent",
+    "grant": "g2",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+      "order_id": "A100",
+      "amount": 80,
+      "reason": "damaged"
+    },
+    "at": "2026-09-26T16:30:00Z"
+  }
+}
