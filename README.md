@@ -53,6 +53,8 @@ Gates were [set before any code](EVAL_PLAN.md). Each held-out set was written by
 
 Held-out 2 was written fresh for v0.2 and included attacks on the new number rules. One disclosure: its author read the eval plan's changelog, which summarizes the three red-team holes, but not the code or any earlier cases. Logs: [`evals/heldout_first_run.txt`](evals/heldout_first_run.txt), [`evals/redteam_v01_run.txt`](evals/redteam_v01_run.txt), [`evals/heldout2_first_run.txt`](evals/heldout2_first_run.txt).
 
+**How much "0 of 18" proves.** It passes the gate, but with 0 unauthorized calls through in 18, the true rate could still be as high as **15%**, and 0 of 14 legitimate calls stopped still allows friction up to **19%** (one-sided 95% exact bounds). Showing unauthorized calls get through less than 1% of the time would take **299** in a row with none through.
+
 **Limits of this evidence:** 80 blind cases plus 3 red-team cases, all synthetic, all written by one model family, in one domain (SaaS support). Most rules are covered by one to three cases each. It hasn't run against a real agent framework's traffic.
 
 ## Use it
