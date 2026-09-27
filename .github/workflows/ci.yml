@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pytest
+      - run: pytest -q tests
+      - run: python evals/run.py evals/heldout2.jsonl
+  package:
+    # Installs the built wheel the way users do (not editable), from outside the repo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build && python -m build --wheel --outdir /tmp/dist
+      - run: python -m venv /tmp/v && /tmp/v/bin/pip install /tmp/dist/*.whl
+      - run: |
+          /tmp/v/bin/agent-handoff-check check examples/refund_ok.json > /dev/null
+          /tmp/v/bin/agent-handoff-check check examples/refund_injected.json > /dev/null && exit 1 || test $? -eq 2
+          echo "installed package OK"
