@@ -38,3 +38,6 @@ Each case is one scenario: the root grant, the handoff grants, the policy, the f
 | Date | Change | Why |
 |---|---|---|
 | 2026-09-26 | Gates frozen before any code or cases | Pre-registration |
+| 2026-09-26 | v0.1 checker frozen (commit `f910515`) before the held-out set existed | So the set can't shape the code |
+| 2026-09-26 | `evals/heldout.jsonl` (40 cases: 14 clean, 18 unauthorized, 8 needs a person; chains of 1–4 grants) written by a separate agent that read only the PRD, this plan and FORMAT.md, reporting counts only. Committed before its first run (`67412c0`) | The blind measurement |
+| 2026-09-26 | **First blind run: all four gates PASS.** 0/18 unauthorized marked ACT, 0/14 clean stopped, 0/8 needs-a-person marked ACT, 26/26 non-ACT decisions explained, 0 BLOCK/ESCALATE mix-ups. Log: `evals/heldout_first_run.txt` | Caveat: the set was written from the same spec the checker implements, and 19 rules fired with most covered by one case each. It shows the checker follows its spec, not that the spec can't be gamed. That's what the red-team pass is for |
