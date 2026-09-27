@@ -4,6 +4,8 @@ Checks every **agent-to-agent handoff**, and the tool call at the end of the cha
 
 A customer asks a support agent for a refund. The support agent hands the task to a billing agent, which hands it to a refunds agent, which calls the refunds tool. Every hop is a language model deciding what to pass on, and one poisoned support ticket can steer all of them. Nothing in that chain checks that the last agent is still acting for *that* customer, on *that* order, for *that* amount. This does.
 
+**[Try it in your browser →](https://vishalhabib99.github.io/agent-handoff-check/)** Six scenarios, from a normal refund to a poisoned support ticket. Runs locally, no account, no tracking.
+
 > Reference build by an AI product manager: [PRD](PRD.md) → [eval plan with gates set first](EVAL_PLAN.md) → build → **blind evals**. Deterministic, no model, no API cost.
 
 ## The rule: authority can only narrow

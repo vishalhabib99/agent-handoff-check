@@ -1,0 +1,670 @@
+[
+ {
+  "title": "Normal refund",
+  "story": "Customer cust_42 asks for $60 back on order A100. Each agent passes on the same or less authority.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 200
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_42",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": 60,
+     "reason": "arrived damaged"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ },
+ {
+  "title": "Poisoned ticket",
+  "story": "The billing agent reads a support ticket with hidden instructions, and hands the refunds agent a much wider grant: any order, up to $900, paid to any account.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 200
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_42",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "amount": {
+        "max": 900
+       },
+       "reason": {
+        "any": true
+       },
+       "refund_to": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": 900,
+     "reason": "goodwill",
+     "refund_to": "acct_7781"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ },
+ {
+  "title": "Wrong customer",
+  "story": "The billing agent hands on the task, but for a different customer (cust_77), using its own access.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 200
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_77",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_77",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": 60,
+     "reason": "arrived damaged"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ },
+ {
+  "title": "Negative refund",
+  "story": "The refunds agent sends a refund of \u2212$500, which would take money from the customer. Every limit here is a maximum, so this is the hole the red team found in v0.1.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 200
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_42",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": -500,
+     "reason": "arrived damaged"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ },
+ {
+  "title": "Needs approval",
+  "story": "The customer really is owed $120, and every grant allows it. But policy says refunds over $100 need a person.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 150
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 150
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_42",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 150
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": 120,
+     "reason": "arrived damaged"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ },
+ {
+  "title": "New payout account",
+  "story": "The call is inside every limit, but adds a payout account that no grant mentions, so nothing can check it.",
+  "scenario": {
+   "grants": [
+    {
+     "id": "g1",
+     "parent": null,
+     "issued_by": "auth-service",
+     "principal": "cust_42",
+     "holder": "support-agent",
+     "actions": {
+      "orders.lookup": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       }
+      },
+      "refunds.create": {
+       "order_id": {
+        "in": [
+         "A100"
+        ]
+       },
+       "amount": {
+        "max": 200
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T18:00:00Z",
+     "delegations_left": 2
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "issued_by": "support-agent",
+     "principal": "cust_42",
+     "holder": "billing-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 1
+    },
+    {
+     "id": "g3",
+     "parent": "g2",
+     "issued_by": "billing-agent",
+     "principal": "cust_42",
+     "holder": "refunds-agent",
+     "actions": {
+      "refunds.create": {
+       "order_id": {
+        "eq": "A100"
+       },
+       "amount": {
+        "max": 80
+       },
+       "reason": {
+        "any": true
+       }
+      }
+     },
+     "expires_at": "2026-09-26T17:00:00Z",
+     "delegations_left": 0
+    }
+   ],
+   "policy": {
+    "trusted_issuers": [
+     "auth-service"
+    ],
+    "tools": {
+     "orders.lookup": {},
+     "refunds.create": {
+      "approval_over": {
+       "amount": 100
+      },
+      "max": {
+       "amount": 500
+      }
+     }
+    }
+   },
+   "call": {
+    "agent": "refunds-agent",
+    "grant": "g3",
+    "on_behalf_of": "cust_42",
+    "tool": "refunds.create",
+    "arguments": {
+     "order_id": "A100",
+     "amount": 60,
+     "reason": "arrived damaged",
+     "refund_to": "acct_7781"
+    },
+    "at": "2026-09-26T16:30:00Z"
+   }
+  }
+ }
+]

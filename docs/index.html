@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Handoff Check</title>
+<meta name="description" content="When AI agents hand work to each other, can the last one do more than the customer asked? Pick a scenario and see every handoff checked.">
+<style>
+  :root { --bg:#F6F7F9; --surface:#FFFFFF; --text:#151A2D; --soft:#525B70; --faint:#8A92A5; --border:#E2E5EC;
+          --accent:#1D4ED8; --accent-soft:#E8EEFC; --ok:#047857; --ok-soft:#D1FAE5; --no:#B91C1C; --no-soft:#FEE2E2; --flag:#B45309; --flag-soft:#FEF3C7; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0E1117; --surface:#161B26; --text:#ECEEF3; --soft:#A7AEC0; --faint:#6B7387; --border:#272D3B;
+    --accent:#7B9CF8; --accent-soft:#1B2740; --ok:#34D399; --ok-soft:#0D2E24; --no:#F87171; --no-soft:#3A1414; --flag:#FBBF24; --flag-soft:#3A2A0B; } }
+  :root[data-theme="dark"] { --bg:#0E1117; --surface:#161B26; --text:#ECEEF3; --soft:#A7AEC0; --faint:#6B7387; --border:#272D3B;
+    --accent:#7B9CF8; --accent-soft:#1B2740; --ok:#34D399; --ok-soft:#0D2E24; --no:#F87171; --no-soft:#3A1414; --flag:#FBBF24; --flag-soft:#3A2A0B; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; padding:24px 16px 48px; }
+  .page { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 24px; line-height: 1.25; margin: 0 0 6px; text-wrap: balance; }
+  .sub { color: var(--soft); margin: 0 0 18px; font-size: 14.5px; }
+  .examples { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .examples button { font:inherit; font-size:13px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; border-radius:99px; padding:6px 12px; cursor:pointer; }
+  .examples button[aria-pressed="true"] { border-color: var(--accent); font-weight: 600; }
+  .story { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:14.5px; margin-bottom:16px; }
+  .chain { display:grid; gap:0; }
+  .node { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .node.bad { border-color: var(--no); box-shadow: 0 0 0 1px var(--no) inset; }
+  .node.warn { border-color: var(--flag); box-shadow: 0 0 0 1px var(--flag) inset; }
+  .node .who { font-weight: 700; font-size: 14.5px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .node .who .tag { font-weight:500; font-size:12px; color:var(--faint); font-family: ui-monospace, Menlo, monospace; }
+  .node .can { color: var(--soft); font-size: 13.5px; margin-top: 4px; }
+  .node .can code { font-size: 12.5px; background: var(--bg); border-radius: 5px; padding: 1px 5px; color: var(--text); }
+  .node ul.why { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; }
+  .node ul.why li.BLOCK { color: var(--no); } .node ul.why li.ESCALATE { color: var(--flag); }
+  .arrow { color: var(--faint); font-size: 12.5px; padding: 4px 0 4px 18px; font-family: ui-monospace, Menlo, monospace; }
+  .policy { margin-top: 12px; }
+  .verdict { display:flex; align-items:center; gap:12px; margin: 18px 0 6px; flex-wrap: wrap; }
+  .badge { font-weight:700; font-size:15px; padding:5px 14px; border-radius:99px; }
+  .ACT { background:var(--ok-soft); color:var(--ok); }
+  .ESCALATE { background:var(--flag-soft); color:var(--flag); }
+  .BLOCK { background:var(--no-soft); color:var(--no); }
+  details.json { margin-top: 18px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 14px; }
+  details.json summary { cursor:pointer; color: var(--accent); font-size: 14px; }
+  textarea { width:100%; min-height: 320px; margin-top: 10px; font: 12.5px/1.45 ui-monospace, Menlo, monospace; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; resize: vertical; }
+  .error { color: var(--no); font-size: 14px; }
+  .foot { font-size: 13px; color: var(--faint); margin-top: 18px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>When AI agents hand work to each other, can the last one do more than the customer asked?</h1>
+  <p class="sub">A customer asks for a refund. A support agent hands the task to a billing agent, which hands it to a refunds agent. Pick a scenario: every handoff and the final action are checked against what the customer authorized and the company's policy. Runs in your browser; nothing is sent anywhere.</p>
+  <div class="examples" id="examples" role="group" aria-label="Scenarios"></div>
+  <div class="story" id="story"></div>
+  <div class="chain" id="chain"></div>
+  <div class="verdict" aria-live="polite"><span id="badge" class="badge"></span><span id="summary" class="sub" style="margin:0"></span></div>
+  <details class="json"><summary>Edit the scenario yourself (JSON)</summary><textarea id="json" spellcheck="false" aria-label="Scenario JSON"></textarea><div id="err" class="error"></div></details>
+  <p class="foot">The rule: authority can only narrow as it's handed on, and the whole chain is re-checked when the action arrives. The worst reason wins. Deterministic, no model. <a href="https://github.com/vishalhabib99/agent-handoff-check">Source, PRD, blind evals and the red-team results</a>.</p>
+</div>
+<script src="checker.js"></script>
+<script>
+(function () {
+  const C = window.AgentHandoffCheck;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const money = (arg, n) => /amount/.test(arg) && typeof n === "number" ? (n < 0 ? "−$" + (-n) : "$" + n) : JSON.stringify(n);
+  const LABEL = { ACT: "ACT: allowed", ESCALATE: "ESCALATE: a person decides", BLOCK: "BLOCK: stopped" };
+
+  function describe(arg, c) {
+    if (!c || typeof c !== "object") return `${arg}: ?`;
+    if (c.any === true) return `${arg}: anything`;
+    const parts = [];
+    if ("eq" in c) parts.push(`= ${money(arg, c.eq)}`);
+    if ("in" in c) parts.push(`one of ${(Array.isArray(c.in) ? c.in : []).map(v => money(arg, v)).join(", ")}`);
+    if ("min" in c && "max" in c) parts.push(`${money(arg, c.min)} to ${money(arg, c.max)}`);
+    else if ("max" in c) parts.push(`up to ${money(arg, c.max)}`);
+    else if ("min" in c) parts.push(`at least ${money(arg, c.min)}`);
+    return `${arg} ${parts.join(", ") || JSON.stringify(c)}`;
+  }
+  function actions(a) {
+    if (!a || typeof a !== "object") return "?";
+    return Object.entries(a).map(([tool, args]) =>
+      `<code>${esc(tool)}</code> ${esc(Object.entries(args || {}).map(([k, c]) => describe(k, c)).join(" · "))}`).join("<br>");
+  }
+  const time = t => typeof t === "string" ? t.replace("T", " ").replace(/:00Z$/, " UTC").replace(/Z$/, " UTC") : "?";
+  const whyList = rs => rs.length ? `<ul class="why">${rs.map(r => `<li class="${r.decision}">${esc(r.detail)}</li>`).join("")}</ul>` : "";
+  const cls = rs => rs.some(r => r.decision === "BLOCK") ? "bad" : rs.some(r => r.decision === "ESCALATE") ? "warn" : "";
+
+  function render(s) {
+    const r = C.check(s);
+    const byHop = {};
+    for (const x of r.reasons) (byHop[String(x.hop)] = byHop[String(x.hop)] || []).push(x);
+    const grants = Object.fromEntries((s.grants || []).map(g => [String(g && g.id), g]));
+    const chain = r.chain.length ? r.chain.map(id => grants[String(id)]) : [];
+    let html = "";
+    if (chain.length) {
+      const root = chain[0];
+      html += `<div class="node"><div class="who">Customer ${esc(root.principal)} <span class="tag">logs in via ${esc(root.issued_by)}</span></div></div>`;
+    }
+    chain.forEach((g, i) => {
+      const rs = byHop[String(g.id)] || [];
+      html += `<div class="arrow">↓ ${i === 0 ? "grants" : "hands on to"}</div>`;
+      html += `<div class="node ${cls(rs)}"><div class="who">${esc(g.holder)} <span class="tag">grant ${esc(g.id)} · ${esc(g.delegations_left)} handoff${g.delegations_left === 1 ? "" : "s"} left · until ${esc(time(g.expires_at))}</span></div>
+        <div class="can">${actions(g.actions)}</div>${whyList(rs)}</div>`;
+    });
+    const call = s.call || {}, callRs = byHop["call"] || [];
+    const args = Object.entries(call.arguments || {}).map(([k, v]) => `${k} ${money(k, v)}`).join(" · ");
+    html += `<div class="arrow">↓ calls the tool</div>`;
+    html += `<div class="node ${cls(callRs)}"><div class="who">${esc(call.agent)} → <code>${esc(call.tool)}</code> <span class="tag">for ${esc(call.on_behalf_of)} at ${esc(time(call.at))}</span></div>
+      <div class="can">${esc(args)}</div>${whyList(callRs)}</div>`;
+    const pol = ((s.policy || {}).tools || {})[call.tool] || {}, polRs = byHop["policy"] || [];
+    const polText = [
+      ...Object.entries(pol.approval_over || {}).map(([k, v]) => `${k} over ${money(k, v)} needs a person`),
+      ...Object.entries(pol.max || {}).map(([k, v]) => `hard cap ${money(k, v)}`),
+      ...Object.entries(pol.min || {}).map(([k, v]) => `floor ${money(k, v)}`)].join(" · ") || "no limits for this tool";
+    html += `<div class="node policy ${cls(polRs)}"><div class="who">Company policy <span class="tag">applies to every agent</span></div><div class="can">${esc(polText)}</div>${whyList(polRs)}</div>`;
+    const orphan = r.reasons.filter(x => !(String(x.hop) in Object.fromEntries(chain.map(g => [String(g.id), 1]))) && !["call", "policy"].includes(String(x.hop)));
+    if (orphan.length) html += `<div class="node bad" style="margin-top:12px"><div class="who">The chain itself</div>${whyList(orphan)}</div>`;
+    $("chain").innerHTML = html;
+    $("badge").className = "badge " + r.decision;
+    $("badge").textContent = LABEL[r.decision];
+    const n = r.reasons.length;
+    $("summary").textContent = n ? `${n} reason${n === 1 ? "" : "s"}, shown on the step each came from. The worst one decides.` : "Every handoff narrowed or kept authority, and the action fits the customer's grant and the policy.";
+  }
+
+  let scenarios = [];
+  function pick(i) {
+    [...$("examples").children].forEach((b, j) => b.setAttribute("aria-pressed", String(i === j)));
+    $("story").textContent = scenarios[i].story;
+    $("json").value = JSON.stringify(scenarios[i].scenario, null, 2);
+    $("err").textContent = "";
+    render(scenarios[i].scenario);
+  }
+  $("json").addEventListener("input", () => {
+    try { const s = JSON.parse($("json").value); $("err").textContent = ""; $("story").textContent = "Your own scenario."; [...$("examples").children].forEach(b => b.setAttribute("aria-pressed", "false")); render(s); }
+    catch (e) { $("err").textContent = "Not valid JSON yet: " + e.message; }
+  });
+  fetch("scenarios.json").then(r => r.json()).then(list => {
+    scenarios = list;
+    list.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = s.title; b.onclick = () => pick(i); $("examples").appendChild(b); });
+    pick(1);
+  }).catch(() => { $("story").textContent = "Couldn't load the scenarios. Open this page from the published site, not a local file."; });
+})();
+</script>
+</body>
+</html>
