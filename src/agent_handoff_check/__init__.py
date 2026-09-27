@@ -4,4 +4,4 @@ from .audit import AuditLog, verify
 from .checker import ACT, BLOCK, ESCALATE, check
 
 __all__ = ["check", "ACT", "ESCALATE", "BLOCK", "AuditLog", "verify"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

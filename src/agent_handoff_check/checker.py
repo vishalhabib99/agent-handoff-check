@@ -50,10 +50,25 @@ def _constraint_problem(c) -> str | None:
     return None
 
 
+def _same(a, b) -> bool:
+    """Equality that never lets a boolean match a number (in Python, True == 1)."""
+    return isinstance(a, bool) == isinstance(b, bool) and a == b
+
+
+def _member(v, values: list) -> bool:
+    return any(_same(v, x) for x in values)
+
+
+def _bounds(c: dict) -> tuple:
+    """(low, high) for a range. A max with no min means a floor of 0: a limit on an amount
+    doesn't authorize its negative. State a min to allow negative numbers."""
+    return c.get("min", 0 if "max" in c else None), c.get("max")
+
+
 def _finite(c: dict) -> list | None:
     """The allowed values if the constraint lists them, else None."""
     if "eq" in c and "in" in c:
-        return [c["eq"]] if c["eq"] in c["in"] else []
+        return [c["eq"]] if _member(c["eq"], c["in"]) else []
     if "eq" in c:
         return [c["eq"]]
     if "in" in c:
@@ -64,12 +79,15 @@ def _finite(c: dict) -> list | None:
 def _satisfies(c: dict, v) -> bool:
     if c.get("any") is True:
         return True
-    if "eq" in c and v != c["eq"]:
+    if "eq" in c and not _same(v, c["eq"]):
         return False
-    if "in" in c and v not in c["in"]:
+    if "in" in c and not _member(v, c["in"]):
         return False
-    for op, ok in (("max", lambda n: v <= n), ("min", lambda n: v >= n)):
-        if op in c and not (_is_num(v) and ok(c[op])):
+    low, high = _bounds(c)
+    if low is not None or high is not None:
+        if not _is_num(v):
+            return False
+        if (low is not None and v < low) or (high is not None and v > high):
             return False
     return True
 
@@ -85,9 +103,11 @@ def _narrower(parent: dict, child: dict) -> bool:
         return all(_satisfies(parent, v) for v in values)
     if _finite(parent) is not None:
         return False  # a range can't fit inside a list of values
-    if "max" in parent and not ("max" in child and child["max"] <= parent["max"]):
+    plow, phigh = _bounds(parent)
+    clow, chigh = _bounds(child)
+    if phigh is not None and not (chigh is not None and chigh <= phigh):
         return False
-    if "min" in parent and not ("min" in child and child["min"] >= parent["min"]):
+    if plow is not None and not (clow is not None and clow >= plow):
         return False
     return True
 
@@ -231,9 +251,18 @@ def _check_call(chain: list, policy: dict, call: dict, reasons: list) -> None:
         reasons.append(_reason(BLOCK, "policy.unknown_tool", "policy", f"{tool!r} isn't in the policy"))
     else:
         rules = tools[tool] or {}
-        for arg, cap in (rules.get("max") or {}).items():
-            if arg in args and not (_is_num(args[arg]) and args[arg] <= cap):
-                reasons.append(_reason(BLOCK, "policy.over_cap", "policy", f"{arg}={args[arg]!r} is over the policy cap of {cap}"))
+        caps, floors = rules.get("max") or {}, rules.get("min") or {}
+        for arg in set(caps) | set(floors):
+            if arg not in args:
+                continue
+            low, high = _bounds({k: v for k, v in (("min", floors.get(arg)), ("max", caps.get(arg))) if v is not None})
+            v = args[arg]
+            if not _is_num(v):
+                reasons.append(_reason(BLOCK, "policy.over_cap", "policy", f"{arg}={v!r} isn't a number, so the policy limits can't be checked"))
+            elif high is not None and v > high:
+                reasons.append(_reason(BLOCK, "policy.over_cap", "policy", f"{arg}={v!r} is over the policy cap of {high}"))
+            elif low is not None and v < low:
+                reasons.append(_reason(BLOCK, "policy.under_floor", "policy", f"{arg}={v!r} is under the policy floor of {low}"))
         for arg, limit in (rules.get("approval_over") or {}).items():
             if arg in args and _is_num(args[arg]) and args[arg] > limit:
                 reasons.append(_reason(ESCALATE, "policy.approval_needed", "policy", f"{arg}={args[arg]} is over {limit}, which needs approval"))
@@ -251,6 +280,19 @@ def _check_call(chain: list, policy: dict, call: dict, reasons: list) -> None:
                 reasons.append(_reason(BLOCK, "call.argument_outside", g["id"], f"{arg}={args[arg]!r} is outside {c}"))
         for arg in set(args) - set(constraints):
             reasons.append(_reason(ESCALATE, "call.argument_unchecked", g["id"], f"{arg!r} isn't mentioned by this grant"))
+
+    # Every number must be bounded on both sides by something the business wrote.
+    rules = tools.get(tool) or {}
+    for arg, v in args.items():
+        if not _is_num(v):
+            continue
+        sources = [g["actions"].get(tool, {}).get(arg) or {} for g in chain]
+        sources.append({k: rules[k][arg] for k in ("min", "max") if arg in (rules.get(k) or {})})
+        bounds = [(0, 0) if _finite(c) is not None else _bounds(c) for c in sources if c.get("any") is not True]
+        missing = [side for side, i in (("lower", 0), ("upper", 1)) if all(b[i] is None for b in bounds)]
+        if missing:
+            reasons.append(_reason(ESCALATE, "call.unbounded_number", "call",
+                                   f"{arg}={v}: no {' or '.join(missing)} limit anywhere in the chain or the policy"))
 
 
 def _result(reasons: list, chain: list) -> dict:

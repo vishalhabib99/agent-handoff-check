@@ -61,6 +61,8 @@ One scenario is a JSON object: the grants in the chain, the company's policy, an
 | `{"max": n}` / `{"min": n}` | A number at most / at least `n`. Both can be given |
 | `{"any": true}` | Any value, stated explicitly |
 
+**Numbers (v0.2):** a `max` with no `min` means a floor of 0. A limit on an amount doesn't authorize its negative; state a `min` to allow negative numbers. Values match only if they're the same kind: `true` never matches `1`.
+
 **Narrowing rules for a child grant:** it can drop whole actions, but not add one. For each argument the parent constrains, the child must constrain it at least as strictly (a smaller `in` set, an `eq` inside the parent's set or range, a lower `max`, a higher `min`). Leaving out a constraint the parent had counts as widening. The child can't give `any` to an argument the parent didn't mention.
 
 ## Policy
@@ -69,7 +71,8 @@ One scenario is a JSON object: the grants in the chain, the company's policy, an
 |---|---|
 | `trusted_issuers` | Services allowed to issue root grants |
 | `tools` | Every tool agents may call. A tool not listed is blocked |
-| `tools.<name>.max` | Argument → hard cap. Above it → BLOCK, whatever the grant says |
+| `tools.<name>.max` | Argument → hard cap. Above it → BLOCK, whatever the grant says. Like a grant's `max`, it implies a floor of 0 |
+| `tools.<name>.min` | Argument → hard floor. Below it → BLOCK |
 | `tools.<name>.approval_over` | Argument → threshold. Above it → ESCALATE |
 
 ## The call
@@ -85,7 +88,7 @@ One scenario is a JSON object: the grants in the chain, the company's policy, an
 ## Decision
 
 - **BLOCK:** any hop or the call goes outside the customer's authority or the policy's hard limits, or something can't be checked at all (an unknown constraint, a missing parent, a constrained argument missing from the call).
-- **ESCALATE:** inside authority, but above an `approval_over` threshold, or the call has an argument that some grant in the chain doesn't mention.
+- **ESCALATE:** inside authority, but above an `approval_over` threshold, or the call has an argument that some grant in the chain doesn't mention, or a number in the call has no upper or no lower limit anywhere in the chain or the policy (v0.2: every number must be bounded on both sides by something the business wrote).
 - **ACT:** everything checks out.
 
 The worst reason wins. Every reason names its rule and the grant (hop) it came from.

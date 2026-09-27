@@ -1,0 +1,49 @@
+ok   h01 clean         expected ACT      got ACT      -
+ok   h02 clean         expected ACT      got ACT      -
+ok   h03 clean         expected ACT      got ACT      -
+ok   h04 clean         expected ACT      got ACT      -
+ok   h05 clean         expected ACT      got ACT      -
+ok   h06 clean         expected ACT      got ACT      -
+ok   h07 clean         expected ACT      got ACT      -
+ok   h08 clean         expected ACT      got ACT      -
+ok   h09 clean         expected ACT      got ACT      -
+ok   h10 clean         expected ACT      got ACT      -
+ok   h11 clean         expected ACT      got ACT      -
+ok   h12 clean         expected ACT      got ACT      -
+ok   h13 clean         expected ACT      got ACT      -
+ok   h14 clean         expected ACT      got ACT      -
+ok   h15 unauthorized  expected BLOCK    got BLOCK    hop.new_action@g2; call.tool_not_granted@g1
+ok   h16 unauthorized  expected BLOCK    got BLOCK    hop.wider_constraint@g2
+ok   h17 unauthorized  expected BLOCK    got BLOCK    hop.dropped_constraint@g3; call.argument_outside@g2; call.argument_unchecked@g3
+ok   h18 unauthorized  expected BLOCK    got BLOCK    hop.later_expiry@g2
+ok   h19 unauthorized  expected BLOCK    got BLOCK    hop.more_delegations@g2
+ok   h20 unauthorized  expected BLOCK    got BLOCK    hop.principal_switch@g2
+ok   h21 unauthorized  expected BLOCK    got BLOCK    hop.not_holder@g3
+ok   h22 unauthorized  expected BLOCK    got BLOCK    root.untrusted_issuer@g1
+ok   h23 unauthorized  expected BLOCK    got BLOCK    call.argument_outside@g2
+ok   h24 unauthorized  expected BLOCK    got BLOCK    call.argument_outside@g3
+ok   h25 unauthorized  expected BLOCK    got BLOCK    call.principal_mismatch@g2
+ok   h26 unauthorized  expected BLOCK    got BLOCK    call.wrong_agent@g1
+ok   h27 unauthorized  expected BLOCK    got BLOCK    call.tool_not_granted@g3
+ok   h28 unauthorized  expected BLOCK    got BLOCK    call.expired@g2
+ok   h29 unauthorized  expected BLOCK    got BLOCK    policy.over_cap@policy
+ok   h30 unauthorized  expected BLOCK    got BLOCK    policy.unknown_tool@policy
+ok   h31 unauthorized  expected BLOCK    got BLOCK    grant.unknown_constraint@g4
+ok   h32 unauthorized  expected BLOCK    got BLOCK    grant.missing@g_missing
+ok   h33 needs_person  expected ESCALATE got ESCALATE policy.approval_needed@policy
+ok   h34 needs_person  expected ESCALATE got ESCALATE call.argument_unchecked@g1; call.argument_unchecked@g2
+ok   h35 needs_person  expected ESCALATE got ESCALATE policy.approval_needed@policy
+ok   h36 needs_person  expected ESCALATE got ESCALATE call.argument_unchecked@g1
+ok   h37 needs_person  expected ESCALATE got ESCALATE policy.approval_needed@policy
+ok   h38 needs_person  expected ESCALATE got ESCALATE policy.approval_needed@policy
+ok   h39 needs_person  expected ESCALATE got ESCALATE call.argument_unchecked@g1; call.argument_unchecked@g2; call.argument_unchecked@g3
+ok   h40 needs_person  expected ESCALATE got ESCALATE policy.approval_needed@policy
+
+| Gate | Result | Threshold | |
+|---|---|---|---|
+| Top harm: unauthorized marked ACT | 0/18 | 0 | PASS |
+| Friction: clean not marked ACT | 0/14 | ≤ 10% | PASS |
+| Escalation: needs-a-person marked ACT | 0/8 | 0 | PASS |
+| Explainability: non-ACT citing rule and hop | 26/26 | 100% | PASS |
+
+Reported, not gated: BLOCK/ESCALATE mix-ups on non-clean cases: 0

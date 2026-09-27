@@ -158,3 +158,64 @@ def test_audit_log_detects_tampering(tmp_path):
     for variant in ([lines[0], json.dumps(edited), lines[2]], [lines[0], lines[2]], [lines[1], lines[0], lines[2]]):
         log.write_text("\n".join(variant) + "\n")
         assert not verify(log)[0]
+
+
+# --- v0.2: every number bounded on both sides; booleans never match numbers (red-team r01–r03) ---
+
+def test_negative_amount_blocks():
+    def f(s):
+        s["call"]["arguments"]["amount"] = -500
+    r = mutate(f)
+    assert r["decision"] == BLOCK and {"call.argument_outside", "policy.under_floor"} <= rules(r)
+
+
+def test_explicit_min_allows_negative():
+    def f(s):
+        for g in s["grants"]:
+            g["actions"]["refunds.create"]["amount"] = {"min": -50, "max": 80}
+        s["policy"]["tools"]["refunds.create"]["min"] = {"amount": -50}
+        s["call"]["arguments"]["amount"] = -20
+    assert mutate(f)["decision"] == ACT
+
+
+def test_child_cannot_open_negative_range():
+    def f(s):
+        s["grants"][1]["actions"]["refunds.create"]["amount"] = {"min": -10, "max": 80}
+    assert "hop.wider_constraint" in rules(mutate(f))
+
+
+def test_unbounded_above_escalates():
+    def f(s):
+        for g in s["grants"]:
+            g["actions"]["refunds.create"]["amount"] = {"min": 0}
+        s["policy"]["tools"]["refunds.create"] = {}
+        s["call"]["arguments"]["amount"] = 999_999_999
+    r = mutate(f)
+    assert r["decision"] == ESCALATE and "call.unbounded_number" in rules(r)
+
+
+def test_any_number_bounded_by_policy_acts():
+    def f(s):
+        for g in s["grants"]:
+            g["actions"]["refunds.create"]["amount"] = {"any": True}
+        s["grants"][1]["actions"]["refunds.create"]["amount"] = {"any": True}
+        s["call"]["arguments"]["amount"] = 40
+    assert mutate(f)["decision"] == ACT
+
+
+def test_pinned_number_is_bounded():
+    def f(s):
+        s["grants"][0]["actions"]["refunds.create"]["amount"] = {"in": [40, 80]}
+        s["grants"][1]["actions"]["refunds.create"]["amount"] = {"eq": 80}
+        s["policy"]["tools"]["refunds.create"] = {}
+    assert mutate(f)["decision"] == ACT
+
+
+def test_boolean_never_matches_number():
+    def f(s):
+        for g in s["grants"]:
+            g["actions"]["refunds.create"]["order_id"] = {"in": [1]}
+        s["grants"][1]["actions"]["refunds.create"]["order_id"] = {"eq": 1}
+        s["call"]["arguments"]["order_id"] = True
+    r = mutate(f)
+    assert r["decision"] == BLOCK and "call.argument_outside" in rules(r)

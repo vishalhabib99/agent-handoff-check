@@ -1,6 +1,6 @@
 [project]
 name = "agent-handoff-check"
-version = "0.1.0"
+version = "0.2.0"
 description = "Checks every agent-to-agent handoff and the tool call at the end: ACT, ESCALATE or BLOCK, so no agent can do more than the customer authorized. Deterministic, blind-evaluated."
 readme = "README.md"
 requires-python = ">=3.10"
