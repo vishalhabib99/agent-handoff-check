@@ -58,3 +58,18 @@ See [EVAL_PLAN.md](EVAL_PLAN.md). Gates are set before the first run.
 ## 8. Rollout
 
 Shadow mode (log the decision, don't enforce) → enforce BLOCK on money-moving tools → enforce everywhere. **Kill switch:** fall back to shadow mode.
+
+**Shadow-mode exit rule (set before shadow mode starts).** Bar: unauthorized calls get through less than 1% of the time, at 95% confidence (one-sided exact binomial). A miss is an unauthorized call the checker would have let through (marked ACT), found by replaying the audit log against the root grants. Each run uses one fixed checker version. The run exits when the number of reviewed cases reaches the count for the misses so far:
+
+| Misses so far | Exit at this many reviewed cases |
+|---|---|
+| 0 | 381 |
+| 1 | 571 |
+| 2 | 738 |
+| 3 | 894 |
+| 4 or more | The run fails. Fix the checker and start a new run |
+
+- **Why not stop at the first clean count:** taken alone, 0 misses in 299 meets the bar. But checking at each row in turn gives the checker four chances to pass, and a checker whose true rate is exactly 1% would then exit about 11% of the time instead of 5%. The counts above are set so the whole schedule, all four chances together, stays at 5% (exact, summed over every path a run can take). The price is 82 more cases on a clean run.
+- **A miss doesn't restart the count.** If a miss leads to a change in the checker, that's a new version and a new run starting from 0, and the stopped run stays in the report with its count and its misses. Restarting would keep only the runs that happened to finish clean.
+- **The result covers only what the run sampled**, which is live traffic. Blind-set and red-team results are bounds on other populations and are reported next to it, not merged into it.
+- The continuation rule came out of [a reader's review](https://dev.to/arhancanli/comment/3g81b) of the "0 of N" write-up.
