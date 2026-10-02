@@ -55,6 +55,14 @@ Held-out 2 was written fresh for v0.2 and included attacks on the new number rul
 
 **How much "0 of 18" proves.** It passes the gate, but with 0 unauthorized calls through in 18, the true rate could still be as high as **15%**, and 0 of 14 legitimate calls stopped still allows friction up to **19%** (one-sided 95% exact bounds). Showing unauthorized calls get through less than 1% of the time would take **299** in a row with none through.
 
+**Shadow-mode status.** The exit rule in [PRD §8](PRD.md#8-rollout) was fixed before any shadow data exists. This table is rebuilt from [`shadow/log.jsonl`](shadow/log.jsonl) by `python shadow/status.py`, never edited by hand, and CI fails if the two disagree. Any change to the rule after a miss shows up in the history.
+
+<!-- shadow-status -->
+| Run | Checker | Cases reviewed | Misses | Exit at | Status |
+|---|---|---|---|---|---|
+| – | – | 0 | 0 | 381 | Not started: no shadow traffic yet |
+<!-- /shadow-status -->
+
 **Limits of this evidence:** 80 blind cases plus 3 red-team cases, all synthetic, all written by one model family, in one domain (SaaS support). Most rules are covered by one to three cases each. It hasn't run against a real agent framework's traffic.
 
 ## Use it
